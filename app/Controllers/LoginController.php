@@ -19,10 +19,15 @@ class LoginController
 
     public function index()
     {
+        if (isset($_SESSION['user'])) {
+            return Redirect::to('post-deductions');
+        }
+
         return View::render('login', [
             'message' => 'foobar'
         ]);
     }
+
 
     public function login(array $data = [])
     {
@@ -32,18 +37,18 @@ class LoginController
         ]);
 
         if($validator::fail()) {
-            // return Redirect::to('login');
-            print_r($validator::$errors);
-            return $validator::$errors;
+            $_SESSION['errors'] = $validator::$errors;
+            return Redirect::to('login');
         }
 
         $user = User::where('username', $data['username'])->first();
         
         if(Hash::check($data['password'], $user->password)) {
-            // Set session
-            return Redirect::to('home');
+            $_SESSION['user'] = $user->makeHidden(['password'])->toArray();
+            return Redirect::to('post-deductions');
         } else {
-            print_r($validator::$errors);
+            $_SESSION['errors'] = ['message' => 'Invalid username or password'];
+            return Redirect::to('login');
         }
 
     }

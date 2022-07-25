@@ -15,7 +15,7 @@ class Deduction extends Model
 
     public function account()
     {
-        return $this->hasOne(AccountsChart::class, 'accountCode', 'accountCode')->withDefault();
+        return $this->hasOne(AccountsChart::class, 'accountCode', 'accountCode')->where('accountTitle', 'like', '%GSIS%');
     }
 
 }

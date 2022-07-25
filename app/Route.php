@@ -24,7 +24,7 @@ class Route extends Core
 
         if(self::guardCall($routeName, self::GET_REQUEST)) {
             list($classController, $method) = $controller;
-            self::execute($classController, $method);
+            self::execute($classController, $method, $_GET);
         }
     }
 

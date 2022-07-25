@@ -6,9 +6,11 @@ use Dotenv\Dotenv;
 use Whoops\Handler\PrettyPageHandler;
 use Illuminate\Database\Capsule\Manager as Capsule;
 
+session_start();
+
 $capsule = new Capsule;
 
-
+$capsule->setAsGlobal();
 
 // Setup the Eloquent ORM... (optional; unless you've used setEventDispatcher())
 $capsule->bootEloquent();
@@ -22,13 +24,15 @@ $whoops->register();
 
 $capsule->addConnection([
     'driver' => 'sqlsrv',
-    'host' => 'SERVER-PC',
+    'host' => 'DESKTOP-8I07SGE',
     'database' => 'DTRPayroll',
     'username' => 'sa',
-    'password' => 'nicole',
+    'password' => 'christopher',
     'charset' => 'utf8',
     'collation' => 'utf8_unicode_ci',
     'prefix' => '',
 ]);
+
+
 
 

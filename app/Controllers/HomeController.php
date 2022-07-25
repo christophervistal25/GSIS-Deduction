@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Supports\View;
+use App\Supports\Redirect;
 
 class HomeController
 {
@@ -11,6 +12,12 @@ class HomeController
             'pageTitle' => 'Dashboard',
             'message' => 'Welcome User' 
         ]);
+    }
+
+    public function logout()
+    {
+        unset($_SESSION['user']);
+        return Redirect::to('login');
     }
 }
 

@@ -24,9 +24,12 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-md-8 col-lg-6 col-xl-5">
-                        <div class="alert alert-danger">
-                            Incorrect Username/Password
-                        </div>
+                        <?php
+                            if(isset($_SESSION['errors'])) {
+                                echo '<div class="alert alert-danger h5">Invalid username or password</div>';
+                                unset($_SESSION['errors']);
+                            }
+                        ?>
                         <div class="card overflow-hidden">
                             <div class="bg-primary bg-soft">
                                 <div class="row">
@@ -69,38 +72,32 @@
                                     <form class="form-horizontal" method="POST" action="login-post">
                                         <div class="mb-3">
                                             <label for="username" class="form-label">
-                                                <span class="lead">
+                                                <span>
                                                     Username
                                                 </span>
                                             </label>
                                             <input type="username" name="username"
-                                                class="form-control form-control-lg rounded-0"
-                                                id="username" placeholder="Enter username"
-                                                value="">
+                                                class="form-control"
+                                                id="username">
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label">
-                                                <span class="lead">
+                                                <span class="">
                                                     Password
                                                 </span>
                                             </label>
                                             <div class="input-group auth-pass-inputgroup">
                                                 <input type="password" name="password"
-                                                    class="form-control form-control-lg  rounded-0"
-                                                    placeholder="Enter password" aria-label="Password"
+                                                    class="form-control" aria-label="Password"
                                                     aria-describedby="password-addon">
-                                                <button class="btn btn-light " tabindex="-1" type="button"
-                                                    id="password-addon"><i class="mdi mdi-eye-outline"></i></button>
                                             </div>
                                         </div>
 
                                         <div class="mt-3 d-grid">
                                             <button class="btn btn-primary waves-effect waves-light text-uppercase"
                                                 type="submit">
-                                                <span class="lead">
-                                                    Log In
-                                                </span>
+                                                    Sign In
                                             </button>
                                         </div>
                                     </form>

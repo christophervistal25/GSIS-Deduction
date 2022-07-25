@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block css %}
+<link href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+<link href="https://cdn.datatables.net/scroller/2.0.7/css/scroller.dataTables.min.css" rel="stylesheet" type="text/css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" type="text/css" />
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    table.dataTable thead th {
+        border-bottom: 0px solid transparent;
+    }
+
+    table.dataTable tfoot th {
+        border: 0px solid transparent;
+    }
+
+    .bg-light-2 {
+        background: #f1f1f1;
+    }
+
+</style>
+{% endblock %}
+{% block content %}
+<div class='row'>
+    <div class='col-lg-12'>
+        {# <div class='float-end'>
+            <button class="btn btn-primary text-uppercase font-size-15 mb-2 shadow" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
+                <i class='fa fa-filter'></i>
+            </button>
+        </div> #}
+        <div class='clearfix'>
+        </div>
+        <div class='card rounded-0 shadow'>
+            <div class='card-body'>
+                <table id="employees-personal-deductions-table" class="display nowrap" style="width:100%">
+                    <thead>
+                        <tr class='bg-light-2'>
+                            <th class='text-dark' style="width:10%;">EMPLOYEE NAME</th>
+                            {% for deduction in deductions %}
+                            <th
+                                class='text-dark align-middle fw-medium text-uppercase text-truncate text-center dynamic-deductions' data-id="{{ deduction.dCode }}">
+                                {{ deduction.account.accountTitle|replace({'GSIS-': ''})|replace({'GSIS - ' : ''}) }} 
+                            </th>
+                            {% endfor %}
+                            <th class='align-middle fw-medium text-uppercase text-truncate text-right bg-light-2'>
+                                SUB-TOTAL
+                            </th>
+                        </tr>
+                    </thead>
+                    <tfoot id='t-foot'>
+                        <tr style='background :#f1f1f1;'>
+                            <td colspan="8" class='text-center border-0 fw-bold lead'>
+                                TOTAL : <span id='total'>0</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div class='float-end mt-2'>
+                    <button class='btn btn-primary btn-lg waves-effect waves-light' id='btnSaveDeductions'>
+                        <i class='fas fa-save' style='pointer-events:none;'></i> Save Deductions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/scroller/2.0.7/js/dataTables.scroller.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+    $(document).ready(function () {
+        let columns = [];
+        let records = [];
+        toastr.options.closeButton = true;
+        toastr.options.positionClass = 'toast-top-right';
+        toastr.options.progressBar = true;
+
+        function number_format(number, decimals, dec_point, thousands_sep) {
+            // Strip all characters but numerical ones.
+            number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+            var n = !isFinite(+number) ? 0 : +number,
+                prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+                sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+                dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+                s = '',
+                toFixedFix = function (n, prec) {
+                    var k = Math.pow(10, prec);
+                    return '' + Math.round(n * k) / k;
+                };
+            // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+            s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+            if (s[0].length > 3) {
+                s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+            }
+            if ((s[1] || '').length < prec) {
+                s[1] = s[1] || '';
+                s[1] += new Array(prec - s[1].length + 1).join('0');
+            }
+            return s.join(dec);
+        }
+    
+        $('.dynamic-deductions').each(function (index, element) {
+            let text = $(element).text().trim().replace(/\s+/g, '_');
+            columns.push({
+                targets: index + 1,
+                orderable: false,
+                render: function (data, type, row) {
+                    return `
+                        <span class='d-none'>${data}</span>
+                        <input class='form-control fw-meedium text-center text-dark amount-field' type='text' data-text="${text}" data-id="${$(element).attr('data-id')}" value="${data == 0 ? '' : data}">
+                    `;
+                },
+            });
+        });
+
+        let employeeColumn = {
+            targets: 0,
+            class: 'text-start fw-medium text-dark cursor-pointer',
+        };
+
+        let totalColumns = {
+            targets: 9,
+            class: 'text-end  fw-bold bg-light-2 total-column text-dark',
+            render: function (data, type, row) {
+                return `${data}`;
+            },
+        };
+
+        columns.push(employeeColumn);
+        columns.push(totalColumns);
+
+        $(document).keypress(function (e) {
+            // If element has a amount-field class
+            if ($(e.target).hasClass('amount-field')) {
+                if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57) && (e.which < 46 || e
+                        .which > 46)) {
+                    return false;
+                }
+            }
+        });
+
+        $(document).keyup(function (e) {
+            let json = {};
+            // If element has a amount-field class
+            if ($(e.target).hasClass('amount-field')) {
+                if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57) && (e.which < 46 || e
+                        .which > 46)) {
+                    return false;
+                }
+                // Update the input element first
+                let input = $(e.target);
+                let value = input.val();
+                
+                input.attr('value', value);
+                
+                // Get the first element
+                let row = input.closest('tr');
+
+                // Get the first TD child of row
+                let td = row.children('td').first();
+                
+                // Get the span element with data-id attribute
+                let employeeID = td.children('span').attr('data-id');
+                let employeeFullName = td.children('span').text();
+                
+                json = {
+                    'Employee_ID' : employeeID,
+                    'Employee_Full_Name' : employeeFullName,
+                    'Deductions' : $(row).find('td').map(function (index, element) {
+                        // Check if index is not the first one and not last one
+                        if( index != 0 && index != $(row).find('td').length - 1 ){
+                            return {
+                                'Deduction_ID' : $(element).find('input').attr('data-id'),
+                                'Deduction_Name' : $(element).find('input').attr('data-text'),
+                                'Amount' : $(element).find('input').val() || 0.00,
+                            };
+                        }
+                        
+                    }).get(),
+                };
+
+                records.push(json);
+            }
+        });
+        
+
+        let table = $('#employees-personal-deductions-table').DataTable({
+            ajax: {
+                url: "/post-deductions-fetched",
+                cache: true
+            },
+            bInfo : false,
+            columnDefs: columns,
+            deferRender: true,
+            scrollY: 550,
+            scrollCollapse: true,
+            scroller: true,
+            drawCallback: function (api) {
+                if(api.json){
+                    $('#total').html(api.json.total);
+                }
+            },
+        });
+
+        $('#hasValue').change(function () {
+            if ($(this).is(':checked')) {
+                // change the url of table datatable
+                table.ajax.url('/post-deductions-value').load();
+            } else {
+                table.ajax.url('/post-deductions-fetched').load();
+            }
+        });
+
+
+        $(document).on('change', '.deduction-column', function () {
+            let column = $(this).attr('data-column');
+            // Checking if the checkbox is checked or not
+            if ($(this).find('input[type="checkbox"]').is(':checked')) {
+                // Add the column to the table
+                table.column(column).visible(true);
+            } else {
+                // Remove the column from the table
+                table.column(column).visible(false);
+                // Find the child checkbox
+                $(this).find('input[type="checkbox"]').removeAttr('checked');
+            }
+        });
+
+
+        $('#btnSaveDeductions').click(function () {
+            let message = document.createElement('p');
+            message.className = 'text-center text-dark';
+            message.innerHTML = 'You are about to save the changes made to the deductions.';
+
+            let sort = _.sortBy(records, 'Employee_ID');
+            let unique =  _.reverse(_.uniqBy(_.reverse([...sort]), 'Employee_ID'));
+
+            // Prompt user using swal to confirm if he/she wants to save the changes
+            swal({
+                title: "Are you sure?",
+                content: message,
+                icon: "warning",
+                buttons : ['Cancel', 'Yes, Save it!'],
+            }).then((confirmed) => {
+                if(confirmed) {
+                    // Change the content of button to a spinner
+                    $('#btnSaveDeductions').html('<i class="fa fa-spinner fa-spin"></i>');
+                    // Change the #total element to a spinner
+                    $('#total').html('<i class="fa fa-spinner fa-spin"></i>');
+
+                    $.ajax({
+                        url : '/post-deductions-post',
+                        type : 'POST',
+                        data : {
+                            'data' : unique,
+                        },
+                        success : function (response) {
+                            if(response.success) {
+                                // Reload the table
+                                table.ajax.reload(null, false);
+
+                                // Display a success message
+                                toastr.success('Deductions successfully saved!', 'Success', { timeOut: 8000 });
+
+                                // Change the content of button to a success message
+                                $('#btnSaveDeductions').html('<i class="fa fa-save"></i> Save Deductions');
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+    });
+
+</script>
+{% endblock %}
+    

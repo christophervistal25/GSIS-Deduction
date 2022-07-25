@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use App\Maintenance\Employee;
+use App\Models\Employee;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 
 class Deduct extends Model
 {
+    public $table = 'deducts';
     public $timestamps = false;
     protected $fillable = ['employee_id', 'amount', 'deductable_id', 'deductable_type'];
     
-    public function deductable()
+    public function personal_deduction()
     {
-        return $this->morphTo();
+        return $this->hasOne('App\Models\Deduction', 'dCode', 'deductable_id')->where('deductionType', 'P');
     }
 
     public function employee()
